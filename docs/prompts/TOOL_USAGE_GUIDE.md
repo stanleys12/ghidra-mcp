@@ -373,7 +373,8 @@ The hash algorithm normalizes position-dependent values so identical functions a
 | External calls | `CALL_EXT` | Different addresses per binary |
 | External data | `DATA_EXT` | Different addresses per binary |
 | Small immediates (<0x10000) | `IMM:value` | Preserved (constants) |
-| Large immediates | `IMM_LARGE` | May be addresses |
+| Large immediates inside program memory | `IMM_LARGE` | Addresses |
+| Other large immediates | `IMM:value` | Preserved (e.g. STL `max_size()` limits) |
 | Registers | Preserved | Part of algorithm logic |
 
 ## Dynamic Analysis Tools (v5.4.0+)

@@ -174,17 +174,14 @@ public class DocumentationHashService {
                     // Keep register names as-is (they're part of the function's logic)
                     normalized.append(instr.getDefaultOperandRepresentation(i));
                 } else if ((opType & OperandType.SCALAR) != 0) {
-                    // For small constants (likely magic numbers or offsets), keep the value
-                    // For large constants (likely addresses), normalize
+                    // Keep constants; normalize large ones that point into the program
                     Object[] opObjects = instr.getOpObjects(i);
                     if (opObjects.length > 0 && opObjects[0] instanceof Scalar) {
                         Scalar scalar = (Scalar) opObjects[0];
-                        long value = scalar.getValue();
-                        // Keep small constants (< 0x10000), normalize large ones
-                        if (Math.abs(value) < 0x10000) {
-                            normalized.append("IMM:").append(value);
-                        } else {
+                        if (BinaryComparisonService.isAddressImmediate(program, scalar)) {
                             normalized.append("IMM_LARGE");
+                        } else {
+                            normalized.append("IMM:").append(scalar.getValue());
                         }
                     } else {
                         normalized.append(instr.getDefaultOperandRepresentation(i));

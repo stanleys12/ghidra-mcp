@@ -32,6 +32,22 @@ the 235-tool schema recording); the figures above are the current ones.
 > the *cause* of a change here (`uv.lock`'s stale dependency group, the
 > release workflows' dangling paths, the benchmark fixture that left with it).
 
+### Fixed
+
+- **Function hashes keep large constants that are not addresses.** `get_function_hash`
+  and the structural matcher (`bulk_fuzzy_match`, `diff_functions`) turned every immediate
+  of 0x10000 or more into `IMM_LARGE`, on the assumption that it was an address. MSVC's
+  STL inlines `max_size()` as `SIZE_MAX / sizeof(T)` (0x1fffffff, 0xccccccc, ...), and
+  that constant is often all that tells two container instantiations apart, so different
+  functions hashed the same and a hash match could propagate a name onto the wrong one.
+  A large immediate is now `IMM_LARGE` only when it falls inside a memory block of the
+  program; otherwise it stays `IMM:<value>` and counts toward the similarity score's
+  immediate set. **Hashes of functions with such constants change**: rebuild any stored
+  index built from `get_function_hash`. The archive's `opcode_hash` does not look at
+  operand values and is unaffected. The `ghidra_scripts/` hash builders still carry
+  their own copy of the old cut and still collide on these functions; moving them to
+  the same rule is a follow-up.
+
 ### Changed — Diablo II–specific content removed (#562)
 
 This project is a generic Ghidra MCP server; game-specific tooling lives elsewhere.

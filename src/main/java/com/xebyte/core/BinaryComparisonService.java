@@ -1,6 +1,7 @@
 package com.xebyte.core;
 
 import ghidra.program.model.address.Address;
+import ghidra.program.model.address.AddressOutOfBoundsException;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.block.BasicBlockModel;
 import ghidra.program.model.block.CodeBlock;
@@ -300,8 +301,9 @@ public class BinaryComparisonService {
                 if ((opType & OperandType.SCALAR) != 0) {
                     Object[] opObjects = instr.getOpObjects(i);
                     if (opObjects.length > 0 && opObjects[0] instanceof Scalar) {
-                        long value = ((Scalar) opObjects[0]).getValue();
-                        if (Math.abs(value) < 0x10000 && value != 0) {
+                        Scalar scalar = (Scalar) opObjects[0];
+                        long value = scalar.getValue();
+                        if (value != 0 && !isAddressImmediate(program, scalar)) {
                             sig.immediateValues.add(value);
                         }
                     }
@@ -895,11 +897,11 @@ public class BinaryComparisonService {
             } else if ((opType & OperandType.SCALAR) != 0) {
                 Object[] opObjects = instr.getOpObjects(i);
                 if (opObjects.length > 0 && opObjects[0] instanceof Scalar) {
-                    long value = ((Scalar) opObjects[0]).getValue();
-                    if (Math.abs(value) < 0x10000) {
-                        sb.append("IMM:").append(value);
-                    } else {
+                    Scalar scalar = (Scalar) opObjects[0];
+                    if (isAddressImmediate(program, scalar)) {
                         sb.append("IMM_LARGE");
+                    } else {
+                        sb.append("IMM:").append(scalar.getValue());
                     }
                 } else {
                     sb.append(instr.getDefaultOperandRepresentation(i));
@@ -914,6 +916,24 @@ public class BinaryComparisonService {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * True when a large immediate names an address in the program's memory. Large constants
+     * that are not addresses (STL max_size() limits, masks, hash seeds) are often the only
+     * thing that tells two instantiations apart, so they keep their value.
+     */
+    static boolean isAddressImmediate(Program program, Scalar scalar) {
+        if (Math.abs(scalar.getValue()) < 0x10000) {
+            return false;
+        }
+        try {
+            Address addr = program.getAddressFactory().getDefaultAddressSpace()
+                .getAddress(scalar.getUnsignedValue());
+            return program.getMemory().contains(addr);
+        } catch (AddressOutOfBoundsException e) {
+            return false;
+        }
     }
 
     // ========================================================================

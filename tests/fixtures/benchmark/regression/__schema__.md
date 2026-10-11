@@ -75,9 +75,11 @@ functions:
     callee_names_contains: ["compute_gcd"]   # all; /get_functions .callees names
 ```
 
-`immediate_values` is collected by `BinaryComparisonService` from scalar
-operands with `0 < |value| < 0x10000`, so a constant of 0, or one at or above
-65536, will never appear there however plainly it is written in the code.
+`immediate_values` is collected by `BinaryComparisonService` from non-zero
+scalar operands, except those at or above 0x10000 that fall inside program
+memory (those are treated as addresses). A constant of 0, or one that happens
+to be an address in the binary, will never appear there however plainly it is
+written in the code.
 
 `basic_block_count` comes from `BasicBlockModel.getCodeBlocksContaining(body)`.
 Pinning it exactly is safe *if the number was measured*; deriving it by reading
